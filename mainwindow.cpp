@@ -11,17 +11,37 @@ MainWindow::~MainWindow() {
 }
 
 float MainWindow::calculateMeanEdgeStrength(Mat image) {
-    // compute da and dy
-    Mat dx, dy;
-    Sobel(image, dx, CV_32F, 1, 0);
-    Sobel(image, dy, CV_32F, 0, 1);
+    int subWidth = image.cols / 3;
+    int subHeight = image.rows / 3;
+    float meanEdgeStrength = 0;
+    Mat subImage;
+    std::vector<Mat> subImages;
 
-    // compute gradient
-    Mat mag;
-    magnitude(dx, dy, mag);
-    Scalar meanVal = cv::mean(mag);
+    for (int i = 0; i < 3; i++) {
+        for (int j = 0; j < 3; j++) {
+            if (i == 1 && j == 1) continue;
+            Rect roi(i*subWidth, j*subHeight, subWidth, subHeight);
+            subImage = image(roi);
+            subImages.push_back(subImage);
+        }
+    }
 
-    return float(meanVal.val[0]);
+    for (int i = 0; i < subImages.size(); i++) {
+        subImage = subImages[i];
+        // compute dx and dy
+        Mat dx, dy;
+        Sobel(subImage, dx, CV_32F, 1, 0);
+        Sobel(subImage, dy, CV_32F, 0, 1);
+
+        // compute gradient
+        Mat mag;
+        magnitude(dx, dy, mag);
+        Scalar meanVal = cv::mean(mag);
+        meanEdgeStrength += meanVal.val[0];
+    }
+    meanEdgeStrength /= subImages.size();
+
+    return meanEdgeStrength;
 }
 
 void MainWindow::on_browseButton_clicked() {
